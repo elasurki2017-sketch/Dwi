@@ -1,0 +1,685 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Detail Payments Report</title>
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; padding: 20px; font-family: Arial, Helvetica, sans-serif; background: #f2f2f2; color: #222; }
+    .app { max-width: 1200px; margin: auto; }
+    .header { background: white; border-radius: 12px; padding: 18px; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center; gap: 15px; box-shadow: 0 2px 8px rgba(0, 0, 0,.08); }
+    .company h1 { margin: 0; font-size: 20px; }
+    .company p { margin: 4px 0 0; font-size: 13px; color: #777; }
+    .profile-box { text-align: right; }
+    .profile-name { font-weight: bold; margin-bottom: 6px; }
+    .profile-btn { border: 0; background: #333; color: white; padding: 8px 14px; border-radius: 7px; cursor: pointer; }
+    .control-card { background: white; border-radius: 12px; padding: 15px; margin-bottom: 15px; display: flex; flex-wrap: wrap; gap: 10px; align-items: flex-end; box-shadow: 0 2px 8px rgba(0, 0, 0,.08); }
+    .field { display: flex; flex-direction: column; gap: 5px; }
+    .field label { font-size: 12px; font-weight: bold; }
+    .field select,.field input { height: 38px; padding: 0 10px; border: 1px solid #bbb; border-radius: 6px; background: white; }
+    .btn { height: 38px; padding: 0 15px; border: 0; border-radius: 6px; cursor: pointer; font-weight: bold; }
+    .btn-add { background: #00b894; color: white; }
+    .btn-refresh { background: #444; color: white; }
+    .btn-print { background: #f1c40f; color: #222; }
+    .report-card { background: white; border-radius: 12px; padding: 15px; box-shadow: 0 2px 8px rgba(0, 0, 0,.08); }
+    .report-title { text-align: center; font-size: 22px; font-weight: bold; text-decoration: underline; margin-bottom: 15px; }
+    .identity { width: 330px; border-collapse: collapse; margin-bottom: 25px; border: 1px solid #333; }
+    .identity td { border: 1px solid #333; padding: 6px 10px; font-size: 13px; vertical-align: middle!important; }
+    .identity tr td:first-child { width: 100px; font-weight: bold; text-align: left; }
+    .identity tr:nth-child(odd) td { background-color: #ffffff; }
+    .identity tr:nth-child(even) td { background-color: #e1e1e1; }
+    .table-wrapper { width: 100%; overflow-x: auto; }
+    .report-table { width: 100%; min-width: 1500px; border-collapse: collapse; table-layout: fixed; }
+    .report-table th,.report-table td { border: 1px solid #333; padding: 6px 5px; font-size: 12px; line-height: 1.2; vertical-align: middle!important; }
+    .report-table th { background: #ffff00; text-align: center; font-weight: bold; }
+    .report-table td { text-align: center; }
+    .report-table tbody tr.row-even { background: #e1e1e1; }
+    .report-table tbody tr.row-odd { background: #ffffff; }
+    .money { text-align: right!important; white-space: nowrap; vertical-align: middle!important; }
+    .text-left { text-align: center!important; vertical-align: middle!important; }
+    .date-cell { width: 90px; }
+    .start-cell,.arrived-cell { width: 110px; }
+    .park-cell { width: 140px; }
+    .money-cell { width: 105px; }
+    .action-cell { width: 80px; }
+    .action-btn { border: 0; padding: 4px 7px; border-radius: 4px; cursor: pointer; font-size: 11px; margin: 1px; }
+    .edit-btn { background: #3498db; color: white; }
+    .delete-btn { background: #e74c3c; color: white; }
+    .subtotal-row td { background: #d9ead3!important; font-weight: bold; vertical-align: middle!important; }
+    .subtotal-label { text-align: left!important; }
+    .total-row td { background: #00ffff!important; font-weight: bold; vertical-align: middle!important; }
+    .total-label,.balance-label { text-align: left!important; }
+    .balance-row td { background: #ffff00!important; font-weight: bold; vertical-align: middle!important; }
+    .beginning-row td { background: #b3e5fc!important; font-weight: bold; vertical-align: middle!important; }
+    .beginning-label { text-align: left!important; }
+    .empty { text-align: center; padding: 25px; color: #777; }
+    .signature-container { margin-top: 30px; display: flex; justify-content: flex-end; padding-right: 15px; }
+    .signature-box { width: 220px; text-align: center; font-size: 13px; }
+    .signature-date { margin-bottom: 65px; }
+    .signature-line { border-bottom: 1px solid #000; margin-bottom: 5px; }
+    .signature-name { font-weight: bold; }
+    .modal { position: fixed; inset: 0; background: rgba(0, 0, 0,.55); display: none; align-items: center; justify-content: center; z-index: 9999; padding: 15px; }
+    .modal.show { display: flex; }
+    .modal-card { width: 100%; max-width: 550px; background: white; border-radius: 12px; padding: 20px; max-height: 90vh; overflow-y: auto; }
+    .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+    .modal-header h2 { margin: 0; font-size: 20px; }
+    .close-btn { border: 0; background: #eee; width: 32px; height: 32px; border-radius: 50%; cursor: pointer; font-size: 18px; }
+    .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .form-group { display: flex; flex-direction: column; gap: 5px; }
+    .form-group.full { grid-column: 1 / -1; }
+    .form-section-title { grid-column: 1 / -1; margin: 6px 0 -2px; padding: 5px 10px; font-size: 12px; font-weight: bold; border-radius: 5px; background: #ffff00; }
+    .form-section-title.out { background: #00ffff; }
+    .form-group label { font-size: 12px; font-weight: bold; }
+    .form-group input { width: 100%; height: 40px; border: 1px solid #bbb; border-radius: 6px; padding: 0 10px; font-size: 14px; }
+    .modal-footer { display: flex; justify-content: flex-end; gap: 8px; margin-top: 20px; }
+    .btn-cancel { background: #ddd; }
+    .btn-save { background: #00b894; color: white; }
+    .loading { position: fixed; inset: 0; display: none; align-items: center; justify-content: center; background: rgba(255, 255, 255,.7); z-index: 10000; }
+    .loading.show { display: flex; }
+    .loading-box { background: white; padding: 20px 30px; border-radius: 10px; box-shadow: 0 3px 15px rgba(0, 0, 0,.2); font-weight: bold; }
+    @media (max-width: 600px) { body { padding: 8px; } .header { flex-direction: column; align-items: flex-start; } .profile-box { text-align: left; } .control-card { align-items: stretch; } .field { width: 100%; } .field select,.field input,.btn { width: 100%; } .identity { width: 100%; } .form-grid { grid-template-columns: 1fr; } .form-group.full { grid-column: auto; } }
+    @media print { * { -webkit-print-color-adjust: exact!important; print-color-adjust: exact!important; } @page { size: A4 landscape; margin: 6mm; } html, body { width: 100%; margin: 0; padding: 0; background: white; } .app { width: 100%; max-width: none; margin: 0; } .header,.control-card,.modal,.loading { display: none!important; } .report-card { width: 100%; margin: 0; padding: 0; border: 0; box-shadow: none; } .report-title { font-size: 16px; margin: 0 0 8px; line-height: 1.2; } .identity { width: 48%; margin: 0 0 10px; border: 1px solid #333!important; } .identity td { font-size: 8.5px; padding: 3px 4px!important; line-height: 1.2; vertical-align: middle!important; border: 1px solid #333!important; } .identity tr:nth-child(odd) td { background-color: #ffffff!important; } .identity tr:nth-child(even) td { background-color: #e1e1e1!important; } .table-wrapper { width: 100%; overflow: visible!important; } .report-table { width: 100%!important; min-width: 0!important; max-width: none!important; table-layout: auto!important; border-collapse: collapse; } .action-cell,.report-table td:last-child { display: none!important; } .report-table th,.report-table td { font-size: 7.5px!important; line-height: 1.2!important; padding: 4px 2px!important; height: auto!important; white-space: normal!important; word-break: normal!important; overflow-wrap: normal!important; vertical-align: middle!important; } .report-table th { font-size: 7.5px!important; white-space: normal!important; hyphens: none!important; vertical-align: middle!important; } .report-table.money { white-space: nowrap!important; font-size: 7px!important; vertical-align: middle!important; } .report-table.text-left { text-align: center!important; vertical-align: middle!important; } .subtotal-row td { font-size: 7.5px!important; white-space: nowrap!important; vertical-align: middle!important; } .subtotal-row td:last-child { display: none!important; } .total-row td,.balance-row td,.beginning-row td { font-size: 7.5px!important; white-space: nowrap!important; vertical-align: middle!important; } .total-row td:last-child,.balance-row td:last-child,.beginning-row td:last-child { display: none!important; } .signature-container { margin-top: 20px; padding-right: 0; } .signature-box { width: 180px; font-size: 8.5px; } .signature-date { margin-bottom: 45px; } }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <!-- HEADER -->
+    <div class="header">
+      <div class="company">
+        <h1>PT JASA MANDIRI TECHGRAHA</h1>
+        <p>Continuous Improvement!</p>
+      </div>
+      <div class="profile-box">
+        <div id="profileNameDisplay" class="profile-name">-</div>
+        <button class="profile-btn" onclick="openProfileModal()">Profile</button>
+      </div>
+    </div>
+
+    <!-- CONTROL -->
+    <div class="control-card">
+      <div class="field">
+        <label for="monthSelect">Month</label>
+        <select id="monthSelect">
+          <option value="">Month</option>
+          <option>Januari</option><option>Februari</option><option>Maret</option><option>April</option>
+          <option>Mei</option><option>Juni</option><option>Juli</option><option>Agustus</option>
+          <option>September</option><option>Oktober</option><option>November</option><option>Desember</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="yearSelect">Year</label>
+        <select id="yearSelect">
+          <option value="">Year</option>
+          <option>2025</option><option>2026</option><option>2027</option><option>2028</option>
+          <option>2029</option><option>2030</option><option>2031</option><option>2032</option>
+          <option>2033</option><option>2034</option><option>2035</option><option>2036</option>
+        </select>
+      </div>
+      <button class="btn btn-refresh" onclick="loadData()">Refresh</button>
+      <button class="btn btn-add" onclick="openPaymentModal()">+ Input Payment</button>
+      <button class="btn btn-print" onclick="triggerPrint()">Print / PDF</button>
+    </div>
+
+    <!-- REPORT -->
+    <div class="report-card">
+      <div class="report-title">DETAIL PAYMENTS REPORT</div>
+      <table class="identity">
+        <tr><td>Plat No.</td><td id="reportPlat">-</td></tr>
+        <tr><td>Driver</td><td id="reportDriver">-</td></tr>
+        <tr><td>Periode</td><td id="reportPeriod">-</td></tr>
+      </table>
+      <div class="table-wrapper">
+        <table class="report-table">
+          <thead>
+            <tr>
+              <th rowspan="2" class="date-cell">Date</th>
+              <th colspan="2">High Way</th>
+              <th rowspan="2" class="park-cell">Park</th>
+              <th colspan="2">IN</th>
+              <th colspan="5">OUT</th>
+              <th rowspan="2" class="money-cell">Balance</th>
+              <th rowspan="2" class="action-cell">Action</th>
+            </tr>
+            <tr>
+              <th class="start-cell">Start</th>
+              <th class="arrived-cell">Arrived</th>
+              <th class="money-cell">Cash</th>
+              <th class="money-cell">Transfer</th>
+              <th class="money-cell">Petrol</th>
+              <th class="money-cell">Parking</th>
+              <th class="money-cell">Parking(Cash)</th>
+              <th class="money-cell">Tollway</th>
+              <th class="money-cell">Other</th>
+            </tr>
+          </thead>
+          <tbody id="reportBody">
+            <tr><td colspan="13" class="empty">Pilih periode terlebih dahulu.</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="signature-container">
+        <div class="signature-box">
+          <div class="signature-date" id="signatureDateDisplay">Jakarta, -</div>
+          <div class="signature-line"></div>
+          <div class="signature-name" id="signatureNameDisplay">-</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PAYMENT MODAL -->
+  <div id="paymentModal" class="modal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h2 id="paymentModalTitle">Input Payment</h2>
+        <button class="close-btn" onclick="closePaymentModal()">&times;</button>
+      </div>
+      <div class="form-grid">
+        <div class="form-group"><label for="paymentDate">Date</label><input type="date" id="paymentDate"></div>
+        <div class="form-group"><label for="paymentStart">High Way - Start</label><input type="text" id="paymentStart"></div>
+        <div class="form-group"><label for="paymentArrived">High Way - Arrived</label><input type="text" id="paymentArrived"></div>
+        <div class="form-group full"><label for="paymentPark">Park</label><input type="text" id="paymentPark"></div>
+        <div class="form-section-title in">IN</div>
+        <div class="form-group"><label for="paymentCash">Cash</label><input type="text" id="paymentCash" inputmode="numeric" placeholder="Rp0"></div>
+        <div class="form-group"><label for="paymentTransfer">Transfer</label><input type="text" id="paymentTransfer" inputmode="numeric" placeholder="Rp0"></div>
+        <div class="form-section-title out">OUT</div>
+        <div class="form-group"><label for="paymentPetrol">Petrol</label><input type="text" id="paymentPetrol" inputmode="numeric" placeholder="Rp0"></div>
+        <div class="form-group"><label for="paymentParking">Parking</label><input type="text" id="paymentParking" inputmode="numeric" placeholder="Rp0"></div>
+        <div class="form-group"><label for="paymentParkingCash">Parking(Cash)</label><input type="text" id="paymentParkingCash" inputmode="numeric" placeholder="Rp0"></div>
+        <div class="form-group"><label for="paymentTollway">Tollway</label><input type="text" id="paymentTollway" inputmode="numeric" placeholder="Rp0"></div>
+        <div class="form-group"><label for="paymentOther">Other</label><input type="text" id="paymentOther" inputmode="numeric" placeholder="Rp0"></div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-cancel" onclick="closePaymentModal()">Cancel</button>
+        <button class="btn btn-save" onclick="savePayment()">Save</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- PROFILE MODAL -->
+  <div id="profileModal" class="modal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h2>Profile</h2>
+        <button class="close-btn" onclick="closeProfileModal()">&times;</button>
+      </div>
+      <div class="form-grid">
+        <div class="form-group full"><label for="profileDriver">Driver</label><input type="text" id="profileDriver"></div>
+        <div class="form-group full"><label for="profilePlat">Plat No.</label><input type="text" id="profilePlat"></div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-cancel" onclick="closeProfileModal()">Cancel</button>
+        <button class="btn btn-save" onclick="saveProfile()">Save</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- LOADING -->
+  <div id="loading" class="loading">
+    <div class="loading-box">Loading...</div>
+  </div>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+  <script>
+    const API_URL = "https://script.google.com/macros/s/AKfycbydpU9yonqAeTf_azdmGmWeSTLdbj0RO9ufOicRtEXWA-nYNREQU0XpVliq4vcSs1lK/exec";
+    let reportData = [];
+    let editingId = null;
+    let currentStartingBalance = 0;
+
+    const monthMap = {Januari: 1, Februari: 2, Maret: 3, April: 4, Mei: 5, Juni: 6, Juli: 7, Agustus: 8, September: 9, Oktober: 10, November: 11, Desember: 12};
+
+    document.addEventListener("DOMContentLoaded", () => {
+      loadProfile();
+      setCurrentPeriod();
+      bindCurrency();
+      updateSignatureDate();
+      loadData();
+    });
+
+    function setCurrentPeriod() {
+      const now = new Date();
+      const month = now.getMonth() + 1;
+      const year = now.getFullYear();
+      const monthName = Object.keys(monthMap).find(key => monthMap[key] === month);
+      document.getElementById("monthSelect").value = monthName || "";
+      document.getElementById("yearSelect").value = year;
+    }
+
+    function getPeriod() {
+      const month = document.getElementById("monthSelect").value;
+      const year = document.getElementById("yearSelect").value;
+      if (!month ||!year) return "";
+      return month + "-" + year;
+    }
+    function getPeriodBefore(period) {
+      const parts = period.split("-");
+      const monthName = parts[0];
+      const year = parseInt(parts[1], 10);
+      let monthNum = monthMap[monthName];
+      let prevMonthNum = monthNum - 1;
+      let prevYear = year;
+      if (prevMonthNum === 0) {
+        prevMonthNum = 12;
+        prevYear = year - 1;
+      }
+      const prevMonthName = Object.keys(monthMap).find(key => monthMap[key] === prevMonthNum);
+      return prevMonthName + "-" + prevYear;
+    }
+
+    async function readJsonResponse(response) {
+      const responseText = await response.text();
+
+      if (!response.ok) {
+        throw new Error("HTTP " + response.status + " - " + (response.statusText || "Request gagal"));
+      }
+
+      try {
+        return JSON.parse(responseText);
+      } catch (error) {
+        console.error("Response API bukan JSON:", responseText);
+        const preview = responseText.replace(/\s+/g, " ").substring(0, 300);
+        throw new Error(
+          "Server tidak mengembalikan JSON. Response awal: " + preview
+        );
+      }
+    }
+
+    async function getPeriodNetTotal(period) {
+      try {
+        const url = API_URL + "?action=list&period=" + encodeURIComponent(period);
+        const response = await fetch(url);
+        const result = await readJsonResponse(response);
+        if (!result.success ||!result.data || result.data.length === 0) { return null; }
+        let net = 0;
+        result.data.forEach(row => {
+          const cash = numberValue(row.cash);
+          const transfer = numberValue(row.transfer);
+          const petrol = numberValue(row.petrol);
+          const parking = numberValue(row.parking);
+          const parkingCash = numberValue(row.parkingCash);
+          const tollway = numberValue(row.tollway);
+          const other = numberValue(row.other);
+          net = net + cash + transfer - petrol - parking - parkingCash - tollway - other;
+        });
+        return net;
+      } catch (error) {
+        console.error("Gagal mengambil data periode " + period, error);
+        return null;
+      }
+    }
+
+    async function getPreviousBalance() {
+      const period = getPeriod();
+      if (!period) return 0;
+      let cumulativeBalance = 0;
+      let cursor = period;
+      const visited = new Set();
+      const MAX_LOOKBACK = 60;
+      for (let i = 0; i < MAX_LOOKBACK; i++) {
+        cursor = getPeriodBefore(cursor);
+        if (visited.has(cursor)) break;
+        visited.add(cursor);
+        const net = await getPeriodNetTotal(cursor);
+        if (net === null) break;
+        cumulativeBalance += net;
+      }
+      return cumulativeBalance;
+    }
+
+
+    async function loadData() {
+      const period = getPeriod();
+      if (!period) { renderTable([]); return; }
+      showLoading("Mengambil data dari Spreadsheet...");
+      try {
+        const startingBalance = await getPreviousBalance();
+        currentStartingBalance = startingBalance;
+        const url = API_URL + "?action=list&period=" + encodeURIComponent(period);
+        const response = await fetch(url);
+        const result = await readJsonResponse(response);
+        if (!result.success) { throw new Error(result.message || "Gagal mengambil data"); }
+        reportData = Array.isArray(result.data)? result.data : [];
+        reportData.sort((a, b) => String(a.date).localeCompare(String(b.date)));
+        renderTable(reportData, startingBalance);
+      } catch (error) {
+        console.error(error);
+        alert("Gagal mengambil data dari Spreadsheet.\n\n" + error.message);
+      } finally { hideLoading(); }
+    }
+
+    function renderTable(data, startingBalance = 0) {
+      const tbody = document.getElementById("reportBody");
+      tbody.innerHTML = "";
+      updateIdentity();
+
+      const beginningTr = document.createElement("tr");
+      beginningTr.className = "beginning-row";
+      beginningTr.innerHTML = `<td colspan="11" class="beginning-label">BEGINNING BALANCE</td><td class="money">${formatRupiah(startingBalance, false)}</td><td class="action-cell"></td>`;
+      tbody.appendChild(beginningTr);
+
+      if (!data.length) {
+        const emptyTr = document.createElement("tr");
+        emptyTr.innerHTML = '<td colspan="13" class="empty">Belum ada data untuk periode ini.</td>';
+        tbody.appendChild(emptyTr);
+        return;
+      }
+
+      let balance = startingBalance;
+      let totalCash = 0; let totalTransfer = 0; let totalPetrol = 0; let totalParking = 0; let totalParkingCash = 0; let totalTollway = 0; let totalOther = 0;
+      const dateCounts = {};
+      data.forEach(row => { dateCounts[row.date] = (dateCounts[row.date] || 0) + 1; });
+      const dateRendered = {};
+      let dateGroupIndex = 0;
+      let currentDateTrack = null;
+
+      data.forEach((row, index) => {
+        if (currentDateTrack!== row.date) {
+          currentDateTrack = row.date;
+          dateGroupIndex++;
+        }
+        const cash = numberValue(row.cash);
+        const transfer = numberValue(row.transfer);
+        const petrol = numberValue(row.petrol);
+        const parking = numberValue(row.parking);
+        const parkingCash = numberValue(row.parkingCash);
+        const tollway = numberValue(row.tollway);
+        const other = numberValue(row.other);
+        balance = balance + cash + transfer - petrol - parking - parkingCash - tollway - other;
+        totalCash += cash; totalTransfer += transfer; totalPetrol += petrol; totalParking += parking; totalParkingCash += parkingCash; totalTollway += tollway; totalOther += other;
+        const tr = document.createElement("tr");
+        tr.className = (dateGroupIndex % 2 === 0)? "row-even" : "row-odd";
+        if (!dateRendered[row.date]) {
+          const rowSpan = dateCounts[row.date];
+          dateRendered[row.date] = true;
+          tr.innerHTML = `<td rowspan="${rowSpan}">${formatDate(row.date)}</td><td class="text-left">${escapeHtml(row.start || "")}</td><td class="text-left">${escapeHtml(row.arrived || "")}</td><td class="text-left">${escapeHtml(row.park || "")}</td><td class="money">${formatRupiah(cash)}</td><td class="money">${formatRupiah(transfer)}</td><td class="money">${formatRupiah(petrol)}</td><td class="money">${formatRupiah(parking)}</td><td class="money">${formatRupiah(parkingCash)}</td><td class="money">${formatRupiah(tollway)}</td><td class="money">${formatRupiah(other)}</td><td class="money">${formatRupiah(balance, false)}</td><td class="action-cell"><button class="action-btn edit-btn" onclick="editPayment('${row.id}')">Edit</button><button class="action-btn delete-btn" onclick="deletePayment('${row.id}')">Delete</button></td>`;
+        } else {
+          tr.innerHTML = `<td class="text-left">${escapeHtml(row.start || "")}</td><td class="text-left">${escapeHtml(row.arrived || "")}</td><td class="text-left">${escapeHtml(row.park || "")}</td><td class="money">${formatRupiah(cash)}</td><td class="money">${formatRupiah(transfer)}</td><td class="money">${formatRupiah(petrol)}</td><td class="money">${formatRupiah(parking)}</td><td class="money">${formatRupiah(parkingCash)}</td><td class="money">${formatRupiah(tollway)}</td><td class="money">${formatRupiah(other)}</td><td class="money">${formatRupiah(balance, false)}</td><td class="action-cell"><button class="action-btn edit-btn" onclick="editPayment('${row.id}')">Edit</button><button class="action-btn delete-btn" onclick="deletePayment('${row.id}')">Delete</button></td>`;
+        }
+        tbody.appendChild(tr);
+      });
+
+      const subTotalTr = document.createElement("tr");
+      subTotalTr.className = "subtotal-row";
+      subTotalTr.innerHTML = `<td colspan="4" rowspan="2" class="subtotal-label">TOTAL</td><td class="money">${formatRupiah(totalCash, false)}</td><td class="money">${formatRupiah(totalTransfer, false)}</td><td class="money">${formatRupiah(totalPetrol, false)}</td><td class="money">${formatRupiah(totalParking, false)}</td><td class="money">${formatRupiah(totalParkingCash, false)}</td><td class="money">${formatRupiah(totalTollway, false)}</td><td class="money">${formatRupiah(totalOther, false)}</td><td class="money"></td><td class="action-cell"></td>`;
+      tbody.appendChild(subTotalTr);
+
+      const parkingTotalTr = document.createElement("tr");
+      parkingTotalTr.className = "subtotal-row";
+      parkingTotalTr.innerHTML = `<td class="money"></td><td class="money"></td><td class="money"></td><td colspan="2" class="money text-left">${formatRupiah(totalParking + totalParkingCash, false)}</td><td class="money"></td><td class="money"></td><td class="money"></td><td class="action-cell"></td>`;
+      tbody.appendChild(parkingTotalTr);
+
+      const totalTr = document.createElement("tr");
+      totalTr.className = "total-row";
+      totalTr.innerHTML = `<td colspan="4" class="total-label">SUB TOTAL</td><td colspan="2" class="money text-left">${formatRupiah(totalCash + totalTransfer, false)}</td><td colspan="5" class="money text-left">${formatRupiah(totalPetrol + totalParking + totalParkingCash + totalTollway + totalOther, false)}</td><td class="money"></td><td class="action-cell"></td>`;
+      tbody.appendChild(totalTr);
+
+      const balanceTr = document.createElement("tr");
+      balanceTr.className = "balance-row";
+      balanceTr.innerHTML = `<td colspan="11" class="balance-label">BALANCE</td><td class="money">${formatRupiah(balance, false)}</td><td class="action-cell"></td>`;
+      tbody.appendChild(balanceTr);
+    }
+
+    function openPaymentModal(id = null) {
+      const period = getPeriod();
+      if (!period) { alert("Silakan pilih Month dan Year periode terlebih dahulu!"); return; }
+      editingId = id;
+      clearPaymentForm();
+      setupDateRangeRestriction();
+      if (id) {
+        const row = reportData.find(item => String(item.id) === String(id));
+        if (!row) { alert("Data tidak ditemukan."); return; }
+        document.getElementById("paymentModalTitle").textContent = "Edit Payment";
+        document.getElementById("paymentDate").value = row.date || "";
+        document.getElementById("paymentStart").value = row.start || "";
+        document.getElementById("paymentArrived").value = row.arrived || "";
+        document.getElementById("paymentPark").value = row.park || "";
+        document.getElementById("paymentCash").value = formatRupiah(numberValue(row.cash));
+        document.getElementById("paymentTransfer").value = formatRupiah(numberValue(row.transfer));
+        document.getElementById("paymentPetrol").value = formatRupiah(numberValue(row.petrol));
+        document.getElementById("paymentParking").value = formatRupiah(numberValue(row.parking));
+        document.getElementById("paymentParkingCash").value = formatRupiah(numberValue(row.parkingCash));
+        document.getElementById("paymentTollway").value = formatRupiah(numberValue(row.tollway));
+        document.getElementById("paymentOther").value = formatRupiah(numberValue(row.other));
+      } else {
+        document.getElementById("paymentModalTitle").textContent = "Input Payment";
+      }
+      document.getElementById("paymentModal").classList.add("show");
+    }
+
+    function closePaymentModal() { document.getElementById("paymentModal").classList.remove("show"); editingId = null; }
+    function clearPaymentForm() { ["paymentDate", "paymentStart", "paymentArrived", "paymentPark", "paymentCash", "paymentTransfer", "paymentPetrol", "paymentParking", "paymentParkingCash", "paymentTollway", "paymentOther"].forEach(id => document.getElementById(id).value = ""); }
+    function setupDateRangeRestriction() { const monthName = document.getElementById("monthSelect").value; const yearStr = document.getElementById("yearSelect").value; if (!monthName ||!yearStr) return; const monthNum = monthMap[monthName]; const year = parseInt(yearStr, 10); const monthFormatted = String(monthNum).padStart(2, '0'); const lastDay = new Date(year, monthNum, 0).getDate(); const lastDayFormatted = String(lastDay).padStart(2, '0'); const dateInput = document.getElementById("paymentDate"); dateInput.min = `${year}-${monthFormatted}-01`; dateInput.max = `${year}-${monthFormatted}-${lastDayFormatted}`; }
+
+    async function savePayment() {
+      const selectedMonthName = document.getElementById("monthSelect").value;
+      const selectedYearStr = document.getElementById("yearSelect").value;
+      const period = getPeriod();
+      if (!period) { alert("Pilih Month dan Year terlebih dahulu."); return; }
+      const dateStr = document.getElementById("paymentDate").value;
+      if (!dateStr) { alert("Tanggal harus diisi."); return; }
+      const inputDate = new Date(dateStr + "T00:00:00");
+      const inputMonthNum = inputDate.getMonth() + 1;
+      const inputYear = inputDate.getFullYear();
+      const targetMonthNum = monthMap[selectedMonthName];
+      const targetYear = parseInt(selectedYearStr, 10);
+      if (inputMonthNum!== targetMonthNum || inputYear!== targetYear) { alert(`Validasi Gagal!\nTanggal harus berada pada periode ${selectedMonthName} ${selectedYearStr}.`); return; }
+      const data = {id: editingId || generateId(), period: period, date: dateStr, start: document.getElementById("paymentStart").value.trim(), arrived: document.getElementById("paymentArrived").value.trim(), park: document.getElementById("paymentPark").value.trim(), cash: parseRupiah(document.getElementById("paymentCash").value), transfer: parseRupiah(document.getElementById("paymentTransfer").value), petrol: parseRupiah(document.getElementById("paymentPetrol").value), parking: parseRupiah(document.getElementById("paymentParking").value), parkingCash: parseRupiah(document.getElementById("paymentParkingCash").value), tollway: parseRupiah(document.getElementById("paymentTollway").value), other: parseRupiah(document.getElementById("paymentOther").value)};
+      if (!data.start &&!data.arrived &&!data.park && data.cash === 0 && data.transfer === 0 && data.petrol === 0 && data.parking === 0 && data.parkingCash === 0 && data.tollway === 0 && data.other === 0) { alert("Masukkan minimal satu data."); return; }
+      if (!confirm("Data sudah benar?")) { return; }
+      showLoading("Menyimpan data...");
+      try {
+        const response = await fetch(API_URL, {method: "POST", headers: { "Content-Type": "text/plain;charset=utf-8" }, body: JSON.stringify({action: editingId? "update" : "add", data: data})});
+        const result = await readJsonResponse(response);
+        if (!result.success) { throw new Error(result.message || "Gagal menyimpan"); }
+        closePaymentModal();
+        await loadData();
+        alert(editingId? "Data berhasil diperbarui." : "Data berhasil disimpan.");
+      } catch (error) { console.error(error); alert("Gagal menyimpan data.\n\n" + error.message); } finally { hideLoading(); }
+    }
+
+    function editPayment(id) { openPaymentModal(id); }
+    async function deletePayment(id) {
+      const row = reportData.find(item => String(item.id) === String(id));
+      if (!row) return;
+      if (!confirm("Hapus data tanggal " + formatDate(row.date) + "?")) { return; }
+      showLoading("Menghapus data...");
+      try {
+        const response = await fetch(API_URL, {method: "POST", headers: { "Content-Type": "text/plain;charset=utf-8" }, body: JSON.stringify({action: "delete", data: { id: id }})});
+        const result = await readJsonResponse(response);
+        if (!result.success) { throw new Error(result.message || "Gagal menghapus"); }
+        await loadData();
+        alert("Data berhasil dihapus.");
+      } catch (error) { console.error(error); alert("Gagal menghapus data.\n\n" + error.message); } finally { hideLoading(); }
+    }
+
+    function openProfileModal() { document.getElementById("profileDriver").value = localStorage.getItem("employeeName") || ""; document.getElementById("profilePlat").value = localStorage.getItem("employeeLocation") || ""; document.getElementById("profileModal").classList.add("show"); }
+    function closeProfileModal() { document.getElementById("profileModal").classList.remove("show"); }
+    function saveProfile() { const driver = document.getElementById("profileDriver").value.trim(); const plat = document.getElementById("profilePlat").value.trim(); localStorage.setItem("employeeName", driver); localStorage.setItem("employeeLocation", plat); updateIdentity(); closeProfileModal(); }
+    function loadProfile() { updateIdentity(); }
+    function updateIdentity() { const driver = localStorage.getItem("employeeName") || "-"; const plat = localStorage.getItem("employeeLocation") || "-"; const period = getPeriod() || "-"; document.getElementById("profileNameDisplay").textContent = driver; document.getElementById("reportDriver").textContent = driver; document.getElementById("reportPlat").textContent = plat; document.getElementById("reportPeriod").textContent = period; document.getElementById("signatureNameDisplay").textContent = driver; }
+    function updateSignatureDate() { const today = new Date(); const options = { day: 'numeric', month: 'long', year: 'numeric' }; const formattedDate = today.toLocaleDateString('id-ID', options); document.getElementById("signatureDateDisplay").textContent = `Jakarta, ${formattedDate}`; }
+    async function triggerPrint() {
+      const monthName = document.getElementById("monthSelect").value;
+      const yearStr = document.getElementById("yearSelect").value;
+      if (!monthName || !yearStr) { alert("Pilih Month dan Year terlebih dahulu."); return; }
+      const period = getPeriod();
+      const driver = localStorage.getItem("employeeName") || "-";
+      const plat = localStorage.getItem("employeeLocation") || "-";
+      updateSignatureDate();
+      const signatureDate = document.getElementById("signatureDateDisplay").textContent;
+      showLoading("Membuat PDF...");
+      try {
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
+        const pageWidth = doc.internal.pageSize.getWidth();
+        const pageHeight = doc.internal.pageSize.getHeight();
+        const margin = 8;
+
+        // Judul
+        doc.setFont(undefined, "bold");
+        doc.setFontSize(14);
+        const title = "DETAIL PAYMENTS REPORT";
+        doc.text(title, pageWidth / 2, 12, { align: "center" });
+        const titleWidth = doc.getTextWidth(title);
+        doc.setLineWidth(0.3);
+        doc.line(pageWidth / 2 - titleWidth / 2, 13.3, pageWidth / 2 + titleWidth / 2, 13.3);
+        doc.setFont(undefined, "normal");
+
+        // Lebar & margin tabel utama (dihitung lebih awal agar tabel identitas bisa mengikuti)
+        const mainColWidths = [18, 20, 20, 26, 20, 20, 20, 20, 22, 20, 20, 23];
+        const mainTableWidth = mainColWidths.reduce((a, b) => a + b, 0);
+        const centerMargin = Math.max(margin, (pageWidth - mainTableWidth) / 2);
+
+        // Tabel identitas (tepi kiri disamakan dengan tabel utama)
+        doc.autoTable({
+          startY: 18,
+          margin: { left: centerMargin },
+          tableWidth: 75,
+          theme: "grid",
+          styles: { fontSize: 8, cellPadding: 1.6, lineColor: [51, 51, 51], lineWidth: 0.15 },
+          body: [
+            ["Plat No.", plat],
+            ["Driver", driver],
+            ["Periode", period]
+          ],
+          columnStyles: { 0: { fontStyle: "bold", cellWidth: 25 }, 1: { cellWidth: 50 } }
+        });
+
+        // Hitung ulang data & total (logika sama seperti tampilan di layar)
+        const data = reportData.slice().sort((a, b) => String(a.date).localeCompare(String(b.date)));
+        const startingBalance = currentStartingBalance;
+        let balance = startingBalance;
+        let totalCash = 0, totalTransfer = 0, totalPetrol = 0, totalParking = 0, totalParkingCash = 0, totalTollway = 0, totalOther = 0;
+        const body = [];
+        body.push([{ content: "BEGINNING BALANCE", colSpan: 11, styles: { halign: "left", fontStyle: "bold", fillColor: [179, 229, 252] } }, { content: formatRupiah(startingBalance, false), styles: { halign: "right", fontStyle: "bold", fillColor: [179, 229, 252] } }]);
+
+        if (!data.length) {
+          body.push([{ content: "Belum ada data untuk periode ini.", colSpan: 12, styles: { halign: "center", textColor: [120, 120, 120] } }]);
+        } else {
+          let dateGroupIndex = 0;
+          let currentDateTrack = null;
+          data.forEach(row => {
+            if (currentDateTrack !== row.date) { currentDateTrack = row.date; dateGroupIndex++; }
+            const cash = numberValue(row.cash), transfer = numberValue(row.transfer), petrol = numberValue(row.petrol), parking = numberValue(row.parking), parkingCash = numberValue(row.parkingCash), tollway = numberValue(row.tollway), other = numberValue(row.other);
+            balance = balance + cash + transfer - petrol - parking - parkingCash - tollway - other;
+            totalCash += cash; totalTransfer += transfer; totalPetrol += petrol; totalParking += parking; totalParkingCash += parkingCash; totalTollway += tollway; totalOther += other;
+            const fill = (dateGroupIndex % 2 === 0) ? [225, 225, 225] : [255, 255, 255];
+            body.push([
+              { content: formatDate(row.date), styles: { fillColor: fill } },
+              { content: row.start || "", styles: { fillColor: fill } },
+              { content: row.arrived || "", styles: { fillColor: fill } },
+              { content: row.park || "", styles: { fillColor: fill } },
+              { content: formatRupiah(cash), styles: { halign: "right", fillColor: fill } },
+              { content: formatRupiah(transfer), styles: { halign: "right", fillColor: fill } },
+              { content: formatRupiah(petrol), styles: { halign: "right", fillColor: fill } },
+              { content: formatRupiah(parking), styles: { halign: "right", fillColor: fill } },
+              { content: formatRupiah(parkingCash), styles: { halign: "right", fillColor: fill } },
+              { content: formatRupiah(tollway), styles: { halign: "right", fillColor: fill } },
+              { content: formatRupiah(other), styles: { halign: "right", fillColor: fill } },
+              { content: formatRupiah(balance, false), styles: { halign: "right", fillColor: fill } }
+            ]);
+          });
+
+          const subtotalFill = [217, 234, 211];
+          body.push([
+            { content: "TOTAL", colSpan: 4, rowSpan: 2, styles: { halign: "left", valign: "middle", fontStyle: "bold", fillColor: subtotalFill } },
+            { content: formatRupiah(totalCash, false), rowSpan: 2, styles: { halign: "right", valign: "middle", fontStyle: "bold", fillColor: subtotalFill } },
+            { content: formatRupiah(totalTransfer, false), rowSpan: 2, styles: { halign: "right", valign: "middle", fontStyle: "bold", fillColor: subtotalFill } },
+            { content: formatRupiah(totalPetrol, false), rowSpan: 2, styles: { halign: "right", valign: "middle", fontStyle: "bold", fillColor: subtotalFill } },
+            { content: formatRupiah(totalParking, false), styles: { halign: "right", fontStyle: "bold", fillColor: subtotalFill } },
+            { content: formatRupiah(totalParkingCash, false), styles: { halign: "right", fontStyle: "bold", fillColor: subtotalFill } },
+            { content: formatRupiah(totalTollway, false), rowSpan: 2, styles: { halign: "right", valign: "middle", fontStyle: "bold", fillColor: subtotalFill } },
+            { content: formatRupiah(totalOther, false), rowSpan: 2, styles: { halign: "right", valign: "middle", fontStyle: "bold", fillColor: subtotalFill } },
+            { content: "", styles: { fillColor: subtotalFill } }
+          ]);
+          body.push([
+            { content: formatRupiah(totalParking + totalParkingCash, false), colSpan: 2, styles: { halign: "center", fontStyle: "bold", fillColor: subtotalFill } },
+            { content: "", styles: { fillColor: subtotalFill } }
+          ]);
+
+          const totalFill = [0, 255, 255];
+          body.push([
+            { content: "SUB TOTAL", colSpan: 4, styles: { halign: "left", fontStyle: "bold", fillColor: totalFill } },
+            { content: formatRupiah(totalCash + totalTransfer, false), colSpan: 2, styles: { halign: "center", fontStyle: "bold", fillColor: totalFill } },
+            { content: formatRupiah(totalPetrol + totalParking + totalParkingCash + totalTollway + totalOther, false), colSpan: 5, styles: { halign: "center", fontStyle: "bold", fillColor: totalFill } },
+            { content: "", styles: { fillColor: totalFill } }
+          ]);
+
+          body.push([
+            { content: "BALANCE", colSpan: 11, styles: { halign: "left", fontStyle: "bold", fillColor: [255, 255, 0] } },
+            { content: formatRupiah(balance, false), styles: { halign: "right", fontStyle: "bold", fillColor: [255, 255, 0] } }
+          ]);
+        }
+
+        const identityFinalY = doc.lastAutoTable.finalY + 5;
+        doc.autoTable({
+          startY: identityFinalY,
+          margin: { left: centerMargin, right: centerMargin },
+          theme: "grid",
+          tableWidth: "wrap",
+          styles: { fontSize: 7.5, cellPadding: 1.4, lineColor: [51, 51, 51], lineWidth: 0.15, valign: "middle", halign: "center", overflow: "linebreak" },
+          headStyles: { fillColor: [255, 255, 0], textColor: [0, 0, 0], fontStyle: "bold", halign: "center" },
+          head: [
+            [
+              { content: "Date", rowSpan: 2 },
+              { content: "High Way", colSpan: 2 },
+              { content: "Park", rowSpan: 2 },
+              { content: "IN", colSpan: 2 },
+              { content: "OUT", colSpan: 5 },
+              { content: "Balance", rowSpan: 2 }
+            ],
+            [
+              { content: "Start" }, { content: "Arrived" },
+              { content: "Cash" }, { content: "Transfer" },
+              { content: "Petrol" }, { content: "Parking" }, { content: "Parking(Cash)" }, { content: "Tollway" }, { content: "Other" }
+            ]
+          ],
+          body: body,
+          columnStyles: {
+            0: { cellWidth: mainColWidths[0] }, 1: { cellWidth: mainColWidths[1] }, 2: { cellWidth: mainColWidths[2] }, 3: { cellWidth: mainColWidths[3] },
+            4: { cellWidth: mainColWidths[4] }, 5: { cellWidth: mainColWidths[5] }, 6: { cellWidth: mainColWidths[6] }, 7: { cellWidth: mainColWidths[7] },
+            8: { cellWidth: mainColWidths[8] }, 9: { cellWidth: mainColWidths[9] }, 10: { cellWidth: mainColWidths[10] }, 11: { cellWidth: mainColWidths[11] }
+          }
+        });
+
+        // Tanda tangan
+        let sigY = doc.lastAutoTable.finalY + 10;
+        if (sigY + 25 > pageHeight - margin) {
+          doc.addPage("a4", "landscape");
+          sigY = margin + 10;
+        }
+        const sigX = pageWidth - centerMargin - 55;
+        doc.setFontSize(9);
+        doc.text(signatureDate, sigX, sigY, { align: "left" });
+        doc.line(sigX, sigY + 16, sigX + 55, sigY + 16);
+        doc.setFont(undefined, "bold");
+        doc.text(driver, sigX + 27.5, sigY + 21, { align: "center" });
+        doc.setFont(undefined, "normal");
+
+        doc.save(`report ${monthName} ${yearStr}.pdf`);
+      } catch (error) {
+        console.error(error);
+        alert("Gagal membuat PDF.\n\n" + error.message);
+      } finally {
+        hideLoading();
+      }
+    }
+    function bindCurrency() { ["paymentCash", "paymentTransfer", "paymentPetrol", "paymentParking", "paymentParkingCash", "paymentTollway", "paymentOther"].forEach(id => { const input = document.getElementById(id); input.addEventListener("input", function() { const value = parseRupiah(this.value); this.value = value? formatRupiah(value) : ""; }); }); }
+    function parseRupiah(value) { if (value === null || value === undefined) return 0; return Number(String(value).replace(/[^\d]/g, "")) || 0; }
+    function formatRupiah(value, allowEmptyIfZero = true) { value = Number(value) || 0; if (value === 0 && allowEmptyIfZero) return ""; return "Rp" + value.toLocaleString("id-ID"); }
+    function numberValue(value) { if (value === null || value === undefined || value === "") return 0; if (typeof value === "number") return value; return parseRupiah(value); }
+    function formatDate(value) { if (!value) return ""; const parts = String(value).split("-"); if (parts.length!== 3) return value; return parts[2] + "/" + parts[1] + "/" + parts[0]; }
+    function getDayName(value) { if (!value) return ""; const date = new Date(value + "T00:00:00"); return date.toLocaleDateString("en-US", { weekday: "long" }); }
+    function generateId() { return Date.now().toString() + Math.random().toString(36).substring(2, 8); }
+    function escapeHtml(value) { return String(value || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;"); }
+    function showLoading(text) { document.querySelector(".loading-box").textContent = text || "Loading..."; document.getElementById("loading").classList.add("show"); }
+    function hideLoading() { document.getElementById("loading").classList.remove("show"); }
+    document.getElementById("monthSelect").addEventListener("change", loadData);
+    document.getElementById("yearSelect").addEventListener("change", loadData);
+    document.getElementById("paymentModal").addEventListener("click", function(e) { if (e.target === this) closePaymentModal(); });
+    document.getElementById("profileModal").addEventListener("click", function(e) { if (e.target === this) closeProfileModal(); });
+</script>
+</body>
+</html>
